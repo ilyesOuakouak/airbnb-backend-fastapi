@@ -56,6 +56,28 @@ app/
      ├─ __init__.py
      └─ user_service.py
 
+## 🧠 Tech Stack
+- FastAPI — modern Python web framework
+- SQLAlchemy + Alembic — ORM and migrations
+- PostgreSQL — primary database
+- Passlib — secure password hashing
+- python-jose — JWT authentication
+- pytest — testing framework
+- Docker (coming soon) — deployment-ready setup
+
+## 🚀 Roadmap
+✅ User registration and login \
+✅ Session validation (/session) 
+- [ ] Listings CRUD (next feature)
+- [ ] Docker + Redis integration 
+- [ ] Prometheus + Grafana monitoring
+- [ ] Scaleway / AWS deployment
+
+## 👨‍💻 Author
+### OUAKOUAK ILYES
+Software Engineer | Backend Developer \
+[GitHub Profile](https://github.com/ilyesouakouak)
+
 ## ⚙️ Setup
 
 ```bash
