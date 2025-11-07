@@ -71,3 +71,18 @@ def test_register_user():
     db.close()
 
     cleanup_test_user(test_email)
+
+def test_login():
+    user = create_test_user()  # returns a real user in DB
+
+    response = client.post("/users/login", json={
+        "email": user.email,
+        "password": "password123"
+    })
+
+    assert response.status_code == 200
+    data = response.json()
+    assert "access_token" in data
+    assert data["token_type"] == "bearer"
+
+    cleanup_test_user(user.email)
