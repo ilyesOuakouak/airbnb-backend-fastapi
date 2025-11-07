@@ -1,21 +1,16 @@
 from typing import List
 
+from app.core.auth import get_current_user
+from app.core.database import get_db
 from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.orm import Session
 from app.models.user import User
-from app.core.database import SessionLocal
 from app.schemas.user import UserCreate, UserResponse, TokenResponse, UserLogin
 from passlib.hash import bcrypt
 from app.services.user_service import authenticate_user
 
 router = APIRouter(prefix="/users", tags=["users"])
 
-def get_db():
-    db =    SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 def register(user: UserCreate, db: Session = Depends(get_db)):
@@ -41,6 +36,17 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
 
     return {"id": new_user.id, "email": new_user.email}
 
+
+@router.get("/me", status_code=status.HTTP_200_OK)
+def get_me(current_user: User = Depends(get_current_user)):
+    return {
+        "id": current_user.id,
+        "email": current_user.email,
+        "first_name": current_user.first_name,
+        "last_name": current_user.last_name
+    }
+
+
 @router.get("/{user_id}", response_model=UserResponse, status_code=status.HTTP_200_OK)
 def get_user_by_id(user_id: int, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == user_id).first()
@@ -50,12 +56,16 @@ def get_user_by_id(user_id: int, db: Session = Depends(get_db)):
 
     return user
 
+
 @router.get("/list", response_model=List[UserResponse],  status_code=status.HTTP_200_OK)
 def get_users(db: Session = Depends(get_db)):
     users = db.query(User).all()
 
     return users
 
+
 @router.post("/login", response_model=TokenResponse)
 def login(user: UserLogin, db: Session = Depends(get_db)):
     return authenticate_user(db, user.email, user.password)
+
+

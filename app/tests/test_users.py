@@ -86,3 +86,20 @@ def test_login():
     assert data["token_type"] == "bearer"
 
     cleanup_test_user(user.email)
+
+def test_get_me():
+    user = create_test_user()
+    payload = {"email": user.email, "password": "password123"}
+    login_response = client.post("/users/login", json=payload)
+    assert login_response.status_code == 200
+    token = login_response.json()["access_token"]
+
+    # Act: call /users/me with Authorization header
+    headers = {"Authorization": f"Bearer {token}"}
+    response = client.get("/users/me", headers=headers)
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["email"] == user.email
+    assert data["first_name"] == user.first_name
+    assert data["last_name"] == user.last_name
