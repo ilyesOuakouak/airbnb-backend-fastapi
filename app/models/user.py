@@ -16,5 +16,5 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
     listings = relationship("Listing", back_populates="host", cascade="all, delete-orphan")
-    reservations = relationship("Reservation", back_populates="user")
+    reservations = relationship("Reservation", back_populates="user", cascade="all, delete-orphan")
     rentals = relationship("Rental", back_populates="user")
