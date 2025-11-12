@@ -15,3 +15,6 @@ class Listing(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     host = relationship("User", back_populates="listings")
+    availabilities = relationship("Availability", back_populates="listing", cascade="all, delete-orphan")
+    reservations = relationship("Reservation", back_populates="listing", cascade="all, delete-orphan")
+    rentals = relationship("Rental", back_populates="listing", cascade="all, delete-orphan")
