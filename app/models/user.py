@@ -1,6 +1,5 @@
-from datetime import datetime
-
 from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql.functions import func
 
 from app.core.database import Base
@@ -15,3 +14,5 @@ class User(Base):
     last_name = Column(String(255), nullable=False)
     first_name = Column(String(255), nullable=False)
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+    listings = relationship("Listing", back_populates="host")
