@@ -16,5 +16,4 @@ class Listing(Base):
 
     host = relationship("User", back_populates="listings")
     availabilities = relationship("Availability", back_populates="listing", cascade="all, delete-orphan")
-    reservations = relationship("Reservation", back_populates="listing", cascade="all, delete-orphan")
     rentals = relationship("Rental", back_populates="listing", cascade="all, delete-orphan")
