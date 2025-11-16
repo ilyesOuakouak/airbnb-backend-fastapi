@@ -1,16 +1,45 @@
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
 from app.core.database import get_db
-from app.models.reservation import Reservation
 from app.models.listing import Listing
 from app.schemas.reservation import ReservationCreate, ReservationResponse
 
 router = APIRouter(prefix="/reservations", tags=["Reservations"])
 
+RESERVATION_SERVICE_URL = "http://127.0.0.1:8001/reservations"
 
-@router.post("/create", response_model=ReservationResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/create", response_model=ReservationResponse)
+async def create_reservation_main(
+        data: ReservationCreate,
+        db: Session = Depends(get_db),
+        current_user=Depends(get_current_user)
+):
+    listing = db.query(Listing).filter(Listing.id == data.listing_id).first()
+    if not listing:
+        raise HTTPException(status_code=404, detail="Listing not found")
+
+    payload = data.model_dump(mode="json")
+    payload["user_id"] = current_user.id
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            f"{RESERVATION_SERVICE_URL}/create",
+            json=payload
+        )
+
+    if response.status_code != 201:
+        raise HTTPException(
+            response.status_code,
+            detail=response.text
+        )
+
+    return response.json()
+
+
+"""@router.post("/create", response_model=ReservationResponse, status_code=status.HTTP_201_CREATED)
 def create_reservation(
     reservation: ReservationCreate,
     db: Session = Depends(get_db),
@@ -53,4 +82,4 @@ def cancel_reservation(
         raise HTTPException(status_code=400, detail="Only pending reservations can be cancelled")
 
     db.delete(reservation)
-    db.commit()
+    db.commit()"""
