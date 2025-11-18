@@ -7,91 +7,163 @@ Designed to follow modern backend engineering practices (async I/O, modular desi
 
 ## 🚀 Tech Stack
 
-| Layer | Technology                               |
-|-------|------------------------------------------|
-| Backend Framework | [FastAPI](https://fastapi.tiangolo.com/) |
-| ORM | SQLAlchemy + Alembic                     |
-| Database | PostgreSQL                               |
-| Auth | JWT (coming soon)                        |
-| Caching / Queue | Redis + Celery (Phase 2)                 |
-| Deployment | Docker + Scaleway or AWS                 |
-| Monitoring | Prometheus + Grafana (Phase 3)           |
+| Layer | Technology                             |
+|-------|----------------------------------------|
+| Backend Framework | [FastAPI](https://fastapi.tiangolo.com/) (sync + async)|
+| ORM | SQLAlchemy + Alembic                   |
+| Main Database | PostgreSQL                             |
+| Auth | JWT                     |
+| Caching / Queue | Redis + Celery          |
+| Inter-service Communication | HTTPX (async)          |
+| Resilience | Tenacity (Retry) + Custom Circuit Breaker          |
+| Microservices | Reservation Service (first extracted service)         |
+| Deployment | Docker + Scaleway/AWS (coming)         |
+| Monitoring | Prometheus + Grafana (Phase 3)         |
 
----
 
-## 🧩 Project Phases
+## 🏗️ Project Structure
 
-**Phase 1 — Core Backend (Current)**  
-- FastAPI setup + PostgreSQL  
-- Users module (`/users/register`, `/users/list`)  
-- Pydantic validation + password hashing  
-- Alembic migrations
-
-**Next:**  
-- `/login` endpoint with JWT  
-- `/me` protected route  
-- Docker integration
-
----
-
-## 🧱 Project Structure
-
+```
 app/
- ├─ __init__.py
- ├─ main.py
- ├─ api/
- │   ├─ __init__.py
- │   └─ user.py
- ├─ core/
- │   ├─ __init__.py
- │   ├─ config.py
- │   └─ database.py
- ├─ models/
- │   ├─ __init__.py
- │   └─ user.py
- ├─ schemas/
- │   ├─ __init__.py
- │   └─ user.py
- └─ services/
-     ├─ __init__.py
-     └─ user_service.py
+ ├── main.py
+ ├── api/
+ │    ├── user.py
+ │    ├── listing.py
+ │    ├── availability.py
+ │    └── reservation.py      ← calls reservation microservice
+ ├── core/
+ │    ├── config.py
+ │    ├── auth.py
+ │    ├── database.py
+ │    ├── redis_client.py
+ │    └── circuit_breaker.py  ← custom circuit breaker
+ ├── services/
+ │    ├── reservation_client.py    ← retry + httpx logic here
+ │    ├── user_service.py
+ │    └── availability_service.py
+ ├── models/
+ ├── schemas/
+ └── tests/
 
-## 🧠 Tech Stack
-- FastAPI — modern Python web framework
-- SQLAlchemy + Alembic — ORM and migrations
-- PostgreSQL — primary database
-- Passlib — secure password hashing
-- python-jose — JWT authentication
-- pytest — testing framework
-- Docker (coming soon) — deployment-ready setup
+reservation_service/
+ ├── app/
+ │    ├── main.py
+ │    ├── api/
+ │    │    └── reservation.py
+ │    ├── core/
+ │    │    ├── config.py
+ │    │    └── database.py
+ │    ├── models/
+ │    │    └── reservation.py
+ │    ├── schemas/
+ │    │    └── reservation.py
+ │    └── ...
+ ├── alembic/
+ └── requirements.txt 
+ ```
 
-## 🚀 Roadmap
-✅ User registration and login \
-✅ Session validation (/session) 
-- [ ] Listings CRUD (next feature)
-- [ ] Docker + Redis integration 
-- [ ] Prometheus + Grafana monitoring
-- [ ] Scaleway / AWS deployment
+## Main API Responsibilities
+
+✅ Authentication (JWT) \
+✅ Listing CRUD \
+✅ Availability + pricing \
+✅ Orchestrates reservations \
+✅ Sends validated data to microservices \
+✅ Uses Circuit Breaker + Retry to survive failures
+
+## Reservation Microservice Responsibilities
+
+✅ Owns reservation_db \
+✅ Stores reservations \
+✅ No knowledge of users or listings (service isolation principle)
+
+# 🚀 Roadmap
+## Phase 1 (Done)
+
+✅ Users Module \
+✅ Listings \
+✅ Availability \
+✅ Redis Cache \
+✅ Async SQLAlchemy \
+
+## Phase 2 (Next) — Distributed System
+
+✅ Reservation Microservice \
+✅ Retry Strategy \
+✅ Circuit Breaker
+-[x] Extract User Microservice \
+-[x] Extract Listing Microservice \
+-[x] API Gateway \
+-[x] Global error handler \
+-[x] Rate limiting \
+-[x] Distributed Tracing (Jaeger) \
+
+## Phase 3 — DevOps
+
+-[x] Docker & Docker Compose
+-[x] Reverse Proxy (Traefik or Nginx)
+-[x] CI/CD
+-[x] Observability (Prometheus + Grafana)
+
+# ⚡ Reliability Features
+## 1 - Retry Strategy (Tenacity)
+Used when main API calls the Reservation microservice \
+
+    ✅ 3 retries \
+    ✅ Exponential backoff (100ms → 200ms → 400ms) \
+    ✅ 2s timeout \
+
+This handles transient failures gracefully.
+
+## 2 - Circuit Breaker
+
+Protects the MAIN API from a failing microservice.\
+States:
+
+    ✅ CLOSED → Everything OK
+    ✅ OPEN → Too many failures → stop sending requests
+    ✅ HALF-OPEN → Test if service recovered
+
+Prevents cascading failures across microservices.
+
+## 3 - Redis Caching
+Used for:
+
+    ✅ Availability lookups
+    ✅ Future caching features
+    ✅ Reducing DB load
+
+# ⚙️ Setup Instructions
+## 1. Main API Setup
+
+ ``` 
+cd app/
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+alembic upgrade head
+uvicorn app.main:app --reload --port 8000
+
+ ```
+## 2 - Reservation Microservice Setup
+
+ ``` 
+
+cd reservation_service/
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+alembic upgrade head
+uvicorn app.main:app --reload --port 8001
+
+ ``` 
+
+
+
 
 ## 👨‍💻 Author
 ### OUAKOUAK ILYES
 Software Engineer | Backend Developer \
 [GitHub Profile](https://github.com/ilyesouakouak)
-
-## ⚙️ Setup
-
-```bash
-# 1️⃣ Create virtual environment
-python3 -m venv .venv
-source .venv/bin/activate
-
-# 2️⃣ Install dependencies
-pip install -r requirements.txt
-
-# 3️⃣ Run database migrations
-alembic upgrade head
-
-# 4️⃣ Start FastAPI server
-uvicorn app.main:app --reload
 
 
