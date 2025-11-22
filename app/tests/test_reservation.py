@@ -36,7 +36,7 @@ def get_access_token(email):
     assert response.status_code == 200
     return response.json()["access_token"]
 
-
+@pytest.mark.skip(reason="Reservation service not available in CI (requires docker)")
 def test_create_reservation():
     user = create_test_user()
     token = get_access_token(user.email)
