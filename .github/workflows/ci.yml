@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - feature/*
+      - feat/*
+  pull_request:
+
+jobs:
+  test:
+    name: Run Python tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: ily19
+          POSTGRES_PASSWORD: ily19-_-
+          POSTGRES_DB: airbnb
+        options: >-
+          --health-cmd="pg_isready -U ily19 -d airbnb"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=8
+
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=8
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest
+
+      - name: Run tests
+        env:
+          DATABASE_URL: postgresql://ily19:ily19-_-@localhost:5432/airbnb
+          REDIS_URL: redis://localhost:6379
+        run: pytest -vv
