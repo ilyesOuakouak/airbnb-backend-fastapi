@@ -8,7 +8,6 @@ class ReservationBase(BaseModel):
     listing_id: int
     start_date: date
     end_date: date
-    total_amount: Optional[float]
 
 
 class ReservationCreate(BaseModel):
@@ -16,7 +15,6 @@ class ReservationCreate(BaseModel):
     user_id: int
     start_date: date
     end_date: date
-    total_amount: Optional[float]
 
 
 class ReservationResponse(ReservationBase):
