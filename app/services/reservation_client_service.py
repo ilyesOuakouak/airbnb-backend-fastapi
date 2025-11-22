@@ -1,11 +1,12 @@
-# app/services/reservation_client.py
+# app/services/reservation_client_service.py
 import httpx
 from tenacity import retry, stop_after_attempt, wait_exponential, RetryError
 from fastapi import HTTPException
+from app.core.config import settings
 
 from app.core.circuit_breaker import CircuitBreaker
 
-RESERVATION_SERVICE_URL = "http://127.0.0.1:8001/reservations"
+RESERVATION_SERVICE_URL = "http://reservation_api:8001"
 breaker = CircuitBreaker()
 
 
@@ -14,9 +15,10 @@ breaker = CircuitBreaker()
     wait=wait_exponential(min=0.1, max=1),
 )
 async def _post_to_reservation_service(payload: dict):
+    url = f"{settings.RESERVATION_SERVICE_URL}/reservations/create"
     async with httpx.AsyncClient() as client:
         return await client.post(
-            f"{RESERVATION_SERVICE_URL}/create",
+            url,
             json=payload,
             timeout=2.0,
         )

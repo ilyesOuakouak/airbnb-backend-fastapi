@@ -1,0 +1,118 @@
+#version: "3.9"
+
+services:
+
+  # ---------------------------------------------------------
+  # MAIN DATABASE (PostgreSQL)
+  # ---------------------------------------------------------
+  main_db:
+    image: postgres:15
+    container_name: main_db
+    restart: always
+    environment:
+      POSTGRES_USER: ily19
+      POSTGRES_PASSWORD: ily19-_-
+      POSTGRES_DB: airbnb
+    ports:
+      - "5433:5432"
+    volumes:
+      - main_pgdata:/var/lib/postgresql/data
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ily19 -d airbnb"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ---------------------------------------------------------
+  # RESERVATION DATABASE (PostgreSQL)
+  # ---------------------------------------------------------
+  reservation_db:
+    image: postgres:15
+    container_name: reservation_db
+    restart: always
+    environment:
+      POSTGRES_USER: ily19
+      POSTGRES_PASSWORD: ily19-_-
+      POSTGRES_DB: reservation_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - reservation_pgdata:/var/lib/postgresql/data
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ily19 -d reservation_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ---------------------------------------------------------
+  # REDIS (for caching)
+  # ---------------------------------------------------------
+  redis:
+    image: redis:7
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "redis-cli", "PING"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+
+  # ---------------------------------------------------------
+  # MAIN API SERVICE
+  # ---------------------------------------------------------
+  main_api:
+    build: .
+    container_name: main_api
+    depends_on:
+      main_db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      reservation_api:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgresql://ily19:ily19-_-@main_db:5432/airbnb
+      REDIS_URL: redis://redis:6379
+      RESERVATION_SERVICE_URL: http://reservation_api:8001
+    ports:
+      - "8000:8000"
+    networks:
+      - backend
+
+  # ---------------------------------------------------------
+  # RESERVATION MICROSERVICE
+  # ---------------------------------------------------------
+  reservation_api:
+    build: ./reservation_service
+    container_name: reservation_api
+    depends_on:
+      reservation_db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://ily19:ily19-_-@reservation_db:5432/reservation_db
+    ports:
+      - "8001:8001"
+    networks:
+      - backend
+
+# ---------------------------------------------------------
+# VOLUMES
+# ---------------------------------------------------------
+volumes:
+  main_pgdata:
+  reservation_pgdata:
+
+# ---------------------------------------------------------
+# NETWORKS
+# ---------------------------------------------------------
+networks:
+  backend:
+    driver: bridge
