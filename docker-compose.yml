@@ -79,6 +79,7 @@ services:
       reservation_api:
         condition: service_started
     environment:
+      SERVICE_NAME: main_api
       DATABASE_URL: postgresql://ily19:ily19-_-@main_db:5432/airbnb
       REDIS_URL: redis://redis:6379
       RESERVATION_SERVICE_URL: http://reservation_api:8001
@@ -97,9 +98,43 @@ services:
       reservation_db:
         condition: service_healthy
     environment:
+      SERVICE_NAME: reservation_api
       DATABASE_URL: postgresql://ily19:ily19-_-@reservation_db:5432/reservation_db
     ports:
       - "8001:8001"
+    networks:
+      - backend
+
+  # ---------------------------------------------------------
+  # PROMETHEUS
+  # ---------------------------------------------------------
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    restart: always
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - backend
+
+  # ---------------------------------------------------------
+  # GRAFANA
+  # ---------------------------------------------------------
+  grafana:
+    image: grafana/grafana:10.2.2
+    container_name: grafana
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
     networks:
       - backend
 
@@ -109,6 +144,7 @@ services:
 volumes:
   main_pgdata:
   reservation_pgdata:
+  grafana_data:
 
 # ---------------------------------------------------------
 # NETWORKS

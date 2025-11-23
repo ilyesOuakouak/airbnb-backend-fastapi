@@ -2,6 +2,9 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
+from app.core.logging import get_logger
+
 from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.models.listing import Listing
@@ -16,11 +19,43 @@ async def create_reservation_main(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
+    logger = get_logger()
+
+    logger.info(
+        "📌 Incoming reservation request to MAIN API",
+        listing_id=data.listing_id,
+        user_id=current_user.id,
+        start=data.start_date.isoformat(),
+        end=data.end_date.isoformat(),
+    )
+
     listing = db.query(Listing).filter(Listing.id == data.listing_id).first()
     if not listing:
+        logger.warning("⚠️ Listing not found", listing_id=data.listing_id)
         raise HTTPException(status_code=404, detail="Listing not found")
 
     payload = data.model_dump(mode="json")
     payload["user_id"] = current_user.id
 
-    return await call_reservation_service(payload)
+    logger.info(
+        "➡️ Forwarding reservation request to reservation microservice",
+        url=settings.RESERVATION_SERVICE_URL,
+        payload=payload
+    )
+
+    try:
+        response = await call_reservation_service(payload)
+
+        logger.success(
+            "✅ Reservation successfully created by reservation microservice",
+            microservice_response=response
+        )
+
+        return response
+
+    except Exception as e:
+        logger.error(
+            "❌ Reservation creation failed (microservice error)",
+            error=str(e)
+        )
+        raise
