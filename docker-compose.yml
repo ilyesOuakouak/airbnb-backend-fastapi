@@ -83,6 +83,7 @@ services:
       DATABASE_URL: postgresql://ily19:ily19-_-@main_db:5432/airbnb
       REDIS_URL: redis://redis:6379
       RESERVATION_SERVICE_URL: http://reservation_api:8001
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
     ports:
       - "8000:8000"
     networks:
@@ -100,6 +101,7 @@ services:
     environment:
       SERVICE_NAME: reservation_api
       DATABASE_URL: postgresql://ily19:ily19-_-@reservation_db:5432/reservation_db
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
     ports:
       - "8001:8001"
     networks:
@@ -138,6 +140,29 @@ services:
     networks:
       - backend
 
+  # ---------------------------------------------------------
+  # TEMPO
+  # ---------------------------------------------------------
+  tempo:
+    image: grafana/tempo:2.4.1
+    ports:
+      - "4318:4318"   # OTLP HTTP ingest endpoint
+    networks:
+      - backend
+    command: [ "--storage.trace.backend=local" ]
+
+  # ---------------------------------------------------------
+  # JAEGER
+  # ---------------------------------------------------------
+  jaeger:
+    image: jaegertracing/all-in-one:1.57
+    container_name: jaeger
+    ports:
+      - "16686:16686"   # Jaeger UI
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    networks:
+      - backend
 # ---------------------------------------------------------
 # VOLUMES
 # ---------------------------------------------------------
