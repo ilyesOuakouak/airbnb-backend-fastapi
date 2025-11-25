@@ -5,10 +5,11 @@ from fastapi import HTTPException
 from app.core.config import settings
 
 from app.core.circuit_breaker import CircuitBreaker
+from opentelemetry import trace
 
 RESERVATION_SERVICE_URL = "http://reservation_api:8001"
 breaker = CircuitBreaker()
-
+tracer = trace.get_tracer(__name__)
 
 @retry(
     stop=stop_after_attempt(3),
@@ -20,7 +21,7 @@ async def _post_to_reservation_service(payload: dict):
         return await client.post(
             url,
             json=payload,
-            timeout=2.0,
+            timeout=5.0,
         )
 
 
@@ -33,7 +34,8 @@ async def call_reservation_service(payload: dict) -> dict:
         )
 
     try:
-        response = await _post_to_reservation_service(payload)
+        with tracer.start_as_current_span("call_reservation_microservice"):
+            response = await _post_to_reservation_service(payload)
     except RetryError:
         breaker.record_failure()
         raise HTTPException(
