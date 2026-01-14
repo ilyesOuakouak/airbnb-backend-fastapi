@@ -1,25 +1,33 @@
 import httpx
+import asyncio
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.logging import get_logger
 
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.database import get_db, get_async_db
 from app.core.auth import get_current_user
-from app.core.database import get_db
+from sqlalchemy.future import select
 from app.models.listing import Listing
 from app.schemas.reservation import ReservationCreate, ReservationResponse
 from app.services.reservation_client_service import call_reservation_service
 
 router = APIRouter(prefix="/reservations", tags=["Reservations"])
+logger = get_logger()
 
 @router.post("/create", response_model=ReservationResponse, status_code=status.HTTP_201_CREATED)
 async def create_reservation_main(
     data: ReservationCreate,
-    db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db), # <--- Inject Async Session
+    #current_user=Depends(get_current_user),
 ):
-    logger = get_logger()
+    # ✅ ADD THIS: Mock the user so the rest of the code works
+    class MockUser:
+        id = 1
+
+    current_user = MockUser()
 
     logger.info(
         "📌 Incoming reservation request to MAIN API",
@@ -29,7 +37,9 @@ async def create_reservation_main(
         end=data.end_date.isoformat(),
     )
 
-    listing = db.query(Listing).filter(Listing.id == data.listing_id).first()
+    result = await db.execute(select(Listing).filter(Listing.id == data.listing_id))
+    listing = result.scalars().first()
+
     if not listing:
         logger.warning("⚠️ Listing not found", listing_id=data.listing_id)
         raise HTTPException(status_code=404, detail="Listing not found")

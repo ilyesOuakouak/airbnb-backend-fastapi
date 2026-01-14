@@ -71,6 +71,8 @@ services:
   main_api:
     build: .
     container_name: main_api
+    # 👇 ADD THIS LINE BELOW:
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     depends_on:
       main_db:
         condition: service_healthy
@@ -95,6 +97,8 @@ services:
   reservation_api:
     build: ./reservation_service
     container_name: reservation_api
+    # 👇 ADD THIS LINE BELOW:
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
     depends_on:
       reservation_db:
         condition: service_healthy
@@ -102,6 +106,7 @@ services:
       SERVICE_NAME: reservation_api
       DATABASE_URL: postgresql://ily19:ily19-_-@reservation_db:5432/reservation_db
       OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
+      REDIS_URL: redis://redis:6379
     ports:
       - "8001:8001"
     networks:
