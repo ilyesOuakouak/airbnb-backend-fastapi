@@ -1,19 +1,20 @@
-import aioredis
+import redis.asyncio as redis
 from app.core.config import settings
 
-redis = None
+redis_client = None
 
 async def get_redis():
-    global redis
-    if redis is None:
-        redis = await aioredis.from_url(
+    global redis_client
+    if redis_client is None:
+        # standard redis-py from_url is synchronous (lazy connection)
+        redis_client = redis.from_url(
             settings.REDIS_URL,
             encoding="utf-8",
             decode_responses=True
         )
-    return redis
+    return redis_client
 
 async def close_redis():
-    global redis
-    if redis:
-        await redis.close()
+    global redis_client
+    if redis_client:
+        await redis_client.close()
