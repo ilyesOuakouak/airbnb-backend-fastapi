@@ -111,7 +111,24 @@ services:
       - "8001:8001"
     networks:
       - backend
-
+  # ---------------------------------------------------------
+  # CELERY
+  # ---------------------------------------------------------
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: celery -A app.core.celery_app worker --loglevel=info
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=postgresql://ily19:ily19-_-@main_db:5432/airbnb
+    depends_on:
+      - redis
+      - main_db
+    volumes:
+      - ./app:/app/app
+    networks:
+      - backend
   # ---------------------------------------------------------
   # PROMETHEUS
   # ---------------------------------------------------------
