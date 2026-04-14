@@ -14,6 +14,8 @@ from app.models.listing import Listing
 from app.schemas.reservation import ReservationCreate, ReservationResponse
 from app.services.reservation_client_service import call_reservation_service
 
+from app.tasks.email_tasks import send_reservation_email
+
 router = APIRouter(prefix="/reservations", tags=["Reservations"])
 logger = get_logger()
 

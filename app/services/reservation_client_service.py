@@ -7,6 +7,9 @@ from app.core.config import settings
 from app.core.circuit_breaker import CircuitBreaker
 from opentelemetry import trace
 
+# ✅ IMPORT THE TASK
+from app.tasks.email_tasks import send_reservation_email
+
 RESERVATION_SERVICE_URL = "http://reservation_api:8001"
 breaker = CircuitBreaker()
 tracer = trace.get_tracer(__name__)
@@ -52,4 +55,19 @@ async def call_reservation_service(payload: dict) -> dict:
     if response.status_code != 201:
         raise HTTPException(response.status_code, detail=response.text)
 
-    return response.json()
+    # ✅ SUCCESS PATH
+    data = response.json()  # Convert to Dict
+
+    # Trigger the background email here!
+    # We use .get("id") to be safe (returns None if key is missing instead of crashing)
+    reservation_id = data.get("id")
+    user_id = payload.get("user_id")  # We have this in the payload sent
+
+    if reservation_id:
+        # Hardcoded email for now, or fetch from User Service if needed
+        user_email = "guest@example.com"
+        print(f"🚀 Triggering background email for Reservation #{reservation_id}")
+        send_reservation_email.delay(user_email, reservation_id)
+
+    return data
+
